@@ -4,11 +4,11 @@ import com.kackan.weather_app.coordinate.dto.CityCoordinateDTO;
 import com.kackan.weather_app.coordinate.service.CoordinateService;
 import com.kackan.weather_app.utils.ListUtils;
 import com.kackan.weather_app.weather.client.WeatherHttpClient;
-import com.kackan.weather_app.weather.dto.WeekWeatherForecastDTO;
+import com.kackan.weather_app.weather.dto.WeatherForecastDTO;
 import com.kackan.weather_app.weather.exception.WeatherForecastDoesntExist;
 import com.kackan.weather_app.weather.exception.WeatherForecastInternalException;
 import com.kackan.weather_app.coordinate.exception.WrongCoordinatesException;
-import com.kackan.weather_app.weather.response.WeekWeatherForecastResponse;
+import com.kackan.weather_app.weather.response.WeatherForecastResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,17 +32,23 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
     }
 
     @Override
-    public WeekWeatherForecastDTO getWeekWeatherForecastForCityName(String cityName) {
+    public WeatherForecastDTO getWeekWeatherForecastForCityName(String cityName) {
         CityCoordinateDTO coordinateForCity = coordinateService.getCoordinateForCity(cityName);
-        return getWeekWeatherForecastForCityCoordinates(coordinateForCity.longitude(), coordinateForCity.latitude());
+        return getWeatherForecastForCityCoordinates(coordinateForCity.longitude(), coordinateForCity.latitude(), 7);
     }
 
-    private WeekWeatherForecastDTO getWeekWeatherForecastForCityCoordinates(Double longitude, Double latitude) {
+    @Override
+    public WeatherForecastDTO getTodayWeatherForecastForCityName(String cityName) {
+        CityCoordinateDTO coordinateForCity = coordinateService.getCoordinateForCity(cityName);
+        return getWeatherForecastForCityCoordinates(coordinateForCity.longitude(), coordinateForCity.latitude(), 1);
+    }
+
+    private WeatherForecastDTO getWeatherForecastForCityCoordinates(Double longitude, Double latitude, int dayNumbers) {
         if (longitude == null
                 || latitude == null) {
             throw new WrongCoordinatesException("Longitude or latitude is empty!");
         }
-        WeekWeatherForecastResponse weatherForecastResponse = weatherHttpClient.getWeatherForecastResponse(latitude, longitude, null);
+        WeatherForecastResponse weatherForecastResponse = weatherHttpClient.getWeatherForecastResponse(latitude, longitude, null, dayNumbers);
         if (weatherForecastResponse == null
                 || weatherForecastResponse.daily() == null
                 || ListUtils.isEmpty(weatherForecastResponse.daily().time())
@@ -63,6 +69,6 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
                                 v -> weatherForecastResponse.daily().temperatures().get(v),
                                 (oldVal, newVal) -> oldVal,
                                 LinkedHashMap::new));
-        return new WeekWeatherForecastDTO(weatherForecast, weatherForecastResponse.dailyUnits().temperatureType());
+        return new WeatherForecastDTO(weatherForecast, weatherForecastResponse.dailyUnits().temperatureType());
     }
 }

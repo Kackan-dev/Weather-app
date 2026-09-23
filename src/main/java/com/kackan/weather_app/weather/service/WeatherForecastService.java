@@ -1,8 +1,10 @@
 package com.kackan.weather_app.weather.service;
 
-import com.kackan.weather_app.weather.dto.WeekWeatherForecastDTO;
+import com.kackan.weather_app.weather.dto.WeatherForecastDTO;
 
 public interface WeatherForecastService {
-    WeekWeatherForecastDTO getWeekWeatherForecastForCityName(String cityName);
+    WeatherForecastDTO getWeekWeatherForecastForCityName(String cityName);
+
+    WeatherForecastDTO getTodayWeatherForecastForCityName(String cityName);
 }
 

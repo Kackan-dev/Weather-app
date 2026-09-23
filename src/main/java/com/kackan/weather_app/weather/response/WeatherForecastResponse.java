@@ -6,9 +6,8 @@ import com.kackan.weather_app.weather.dto.Daily;
 import com.kackan.weather_app.weather.dto.DailyUnits;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record WeekWeatherForecastResponse(
-        Daily daily,
-        @JsonProperty("daily_units")
-        DailyUnits dailyUnits
-) {
-}
+public record WeatherForecastResponse(
+    Daily daily,
+    @JsonProperty("daily_units")
+    DailyUnits dailyUnits
+){}
