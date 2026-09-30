@@ -2,6 +2,7 @@ package com.kackan.weather_app.weather.service;
 
 import com.kackan.weather_app.coordinate.dto.CityCoordinateDTO;
 import com.kackan.weather_app.coordinate.dto.PolishProvinceCapitalCityCoordinateDTO;
+import com.kackan.weather_app.coordinate.enums.PolishProvinceCapitalsEnum;
 import com.kackan.weather_app.coordinate.service.CoordinateService;
 import com.kackan.weather_app.utils.ListUtils;
 import com.kackan.weather_app.weather.client.WeatherHttpClient;
@@ -75,7 +76,9 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
         List<PolishProvinceWeatherForecastDTO> resultList = new ArrayList<>();
         for (Future<PolishProvinceWeatherForecastDTO> provinceWeatherFuture: futures) {
             try {
-                resultList.add(provinceWeatherFuture.get());
+                if (provinceWeatherFuture.state() == Future.State.SUCCESS) {
+                    resultList.add(provinceWeatherFuture.get());
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
