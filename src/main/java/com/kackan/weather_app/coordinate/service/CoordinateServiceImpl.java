@@ -59,7 +59,9 @@ public class CoordinateServiceImpl implements CoordinateService {
         List<PolishProvinceCapitalCityCoordinateDTO> resultList = new ArrayList<>();
         for (Future<PolishProvinceCapitalCityCoordinateDTO> provinceFuture: futures) {
             try {
-                resultList.add(provinceFuture.get());
+                if (provinceFuture.state() == Future.State.SUCCESS) {
+                    resultList.add(provinceFuture.get());
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
