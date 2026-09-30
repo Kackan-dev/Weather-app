@@ -1,5 +1,6 @@
 package com.kackan.weather_app.weather.controller;
 
+import com.kackan.weather_app.weather.dto.PolishProvinceWeatherForecastDTO;
 import com.kackan.weather_app.weather.dto.WeatherForecastDTO;
 import com.kackan.weather_app.weather.service.WeatherForecastService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/forecast")
@@ -23,12 +24,18 @@ public class WeatherForecastController {
     @GetMapping("/{cityName}/week")
     public ResponseEntity<WeatherForecastDTO> getWeekWeatherForecast(@PathVariable String cityName) {
         return new ResponseEntity<>(weatherForecastService.getWeekWeatherForecastForCityName(cityName),
-                HttpStatus.valueOf(200));
+                HttpStatus.OK);
     }
 
     @GetMapping("/{cityName}/day")
     public ResponseEntity<WeatherForecastDTO> getTodayWeatherForecast(@PathVariable String cityName) {
         return new ResponseEntity<>(weatherForecastService.getTodayWeatherForecastForCityName(cityName),
-                HttpStatus.valueOf(200));
+                HttpStatus.OK);
+    }
+
+    @GetMapping("/polish/province")
+    public ResponseEntity<List<PolishProvinceWeatherForecastDTO>> getTodayWeatherForecastForPolishProvinces() {
+        return new ResponseEntity<>(weatherForecastService.getTodayWeatherForecastForPolishProvinces(),
+                HttpStatus.OK);
     }
 }

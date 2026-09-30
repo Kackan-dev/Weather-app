@@ -1,9 +1,11 @@
 package com.kackan.weather_app.weather.service;
 
 import com.kackan.weather_app.coordinate.dto.CityCoordinateDTO;
+import com.kackan.weather_app.coordinate.dto.PolishProvinceCapitalCityCoordinateDTO;
 import com.kackan.weather_app.coordinate.service.CoordinateService;
 import com.kackan.weather_app.utils.ListUtils;
 import com.kackan.weather_app.weather.client.WeatherHttpClient;
+import com.kackan.weather_app.weather.dto.PolishProvinceWeatherForecastDTO;
 import com.kackan.weather_app.weather.dto.WeatherForecastDTO;
 import com.kackan.weather_app.weather.exception.WeatherForecastDoesntExist;
 import com.kackan.weather_app.weather.exception.WeatherForecastInternalException;
@@ -13,9 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -41,6 +48,36 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
     public WeatherForecastDTO getTodayWeatherForecastForCityName(String cityName) {
         CityCoordinateDTO coordinateForCity = coordinateService.getCoordinateForCity(cityName);
         return getWeatherForecastForCityCoordinates(coordinateForCity.longitude(), coordinateForCity.latitude(), 1);
+    }
+
+    @Override
+    public List<PolishProvinceWeatherForecastDTO> getTodayWeatherForecastForPolishProvinces() {
+        List<Future<PolishProvinceWeatherForecastDTO>> futures = null;
+        List<PolishProvinceCapitalCityCoordinateDTO> coordinatesOfPolishProvinceCapitals = coordinateService.getCoordinatesOfPolishProvinceCapitals();
+        List<Callable<PolishProvinceWeatherForecastDTO>> list = coordinatesOfPolishProvinceCapitals
+                .stream()
+                .map(coordinate -> (Callable<PolishProvinceWeatherForecastDTO>) () -> new PolishProvinceWeatherForecastDTO(coordinate.polishProvinceCapitalsEnum(),
+                        getWeatherForecastForCityCoordinates(coordinate.cityCoordinateDTO().longitude(),
+                                coordinate.cityCoordinateDTO().latitude(),
+                                1))
+                ).toList();
+        try (var executorService = Executors.newVirtualThreadPerTaskExecutor()) {
+             futures = executorService.invokeAll(list);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        List<PolishProvinceWeatherForecastDTO> resultList = new ArrayList<>();
+        for (Future<PolishProvinceWeatherForecastDTO> provinceWeatherFuture: futures) {
+            try {
+                resultList.add(provinceWeatherFuture.get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return resultList;
     }
 
     private WeatherForecastDTO getWeatherForecastForCityCoordinates(Double longitude, Double latitude, int dayNumbers) {
