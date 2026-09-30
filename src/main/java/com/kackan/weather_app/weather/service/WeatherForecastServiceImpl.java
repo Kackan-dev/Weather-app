@@ -19,15 +19,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
 public class WeatherForecastServiceImpl implements WeatherForecastService {
+
+    private static final Semaphore SEMAPHORE = new Semaphore(3);
 
     private final WeatherHttpClient weatherHttpClient;
     private final CoordinateService coordinateService;
@@ -56,10 +55,17 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
         List<PolishProvinceCapitalCityCoordinateDTO> coordinatesOfPolishProvinceCapitals = coordinateService.getCoordinatesOfPolishProvinceCapitals();
         List<Callable<PolishProvinceWeatherForecastDTO>> list = coordinatesOfPolishProvinceCapitals
                 .stream()
-                .map(coordinate -> (Callable<PolishProvinceWeatherForecastDTO>) () -> new PolishProvinceWeatherForecastDTO(coordinate.polishProvinceCapitalsEnum(),
-                        getWeatherForecastForCityCoordinates(coordinate.cityCoordinateDTO().longitude(),
-                                coordinate.cityCoordinateDTO().latitude(),
-                                1))
+                .map(coordinate -> (Callable<PolishProvinceWeatherForecastDTO>) () -> {
+                    SEMAPHORE.acquire();
+                    try {
+                        return new PolishProvinceWeatherForecastDTO(coordinate.polishProvinceCapitalsEnum(),
+                                getWeatherForecastForCityCoordinates(coordinate.cityCoordinateDTO().longitude(),
+                                        coordinate.cityCoordinateDTO().latitude(),
+                                        1));
+                    } finally {
+                        SEMAPHORE.release();
+                    }
+                }
                 ).toList();
         try (var executorService = Executors.newVirtualThreadPerTaskExecutor()) {
              futures = executorService.invokeAll(list);
